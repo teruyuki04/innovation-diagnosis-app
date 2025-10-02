@@ -1,35 +1,80 @@
 import streamlit as st
-from score_logic import interpret_score
+import json
 
-st.set_page_config(page_title="構想プロセス診断", layout="centered")
-st.title("🧭 構想プロセスのボトルネック診断")
+# JSON読み込み
+with open("diagnosis_ranges.json", "r", encoding="utf-8") as f:
+    ranges = json.load(f)
 
-st.write("以下の設問に答えて、あなたの組織のイノベーション構造を可視化しましょう。")
+st.title("✅【構想プロセスのボトルネック診断チェックリスト】")
 
-questions = {
-    "【1】課題設定の深さ": "社会構造 × 未充足の欲求 まで掘り下げた課題設定ができているか？",
-    "【2】勝ち筋の明確さ": "小市場の独占 → 自動拡張 の戦略が共有されているか？",
-    "【3】プロセスの再現性": "構想 → 仮説 → 実証 の流れが仕組み化されているか？",
-    "【4】制度的な後押し": "挑戦を支える裁量・予算・評価が制度的に整備されているか？"
-}
+st.write("""
+このチェックリストは、次の柱となる事業がなぜ生まれないのか──  
+その原因を「構造的なボトルネック」として可視化するためのものです。
+""")
 
-options = [
-    "1点：できていない／仕組みがない",
-    "2点：属人化・偶発的に一部ある",
-    "3点：あるが全社的でない",
-    "4点：実践と改善が定着",
-    "5点：全社で標準化"
+st.markdown("### 🔢 評価基準（共通）")
+st.write("""
+- 1点：まったくできていない／仕組みがない  
+- 2点：一部にはあるが、属人化・偶発的  
+- 3点：仕組みはあるが、全社的には運用されていない  
+- 4点：実践と改善のサイクルが定着している  
+- 5点：全社に再現可能な仕組みとして標準化されている
+""")
+
+questions = [
+    {
+        "title": "【1】課題設定の深さ",
+        "question": "「社会構造 × 未充足の欲求」まで掘り下げた、勝てる課題設定ができているか？"
+    },
+    {
+        "title": "【2】勝ち筋の明確さ",
+        "question": "「小市場の独占 → 自動拡張」までの戦略設計が組織内で共有されているか？"
+    },
+    {
+        "title": "【3】プロセスの再現性",
+        "question": "「構想 → 仮説 → 実証」のプロセスが仕組みとして確立されているか？"
+    },
+    {
+        "title": "【4】制度的な後押し",
+        "question": "挑戦を支える裁量・予算・評価が、制度的に整備されているか？"
+    }
 ]
 
-score = 0
+scores = []
+for q in questions:
+    st.markdown(f"### {q['title']}")
+    st.write(q["question"])
+    score = st.radio("選択肢を選んでください", [1, 2, 3, 4, 5], key=q['title'])
+    scores.append(score)
 
-for q, desc in questions.items():
-    st.subheader(q)
-    st.caption(desc)
-    choice = st.radio("選択肢を選んでください", options, key=q)
-    score += int(choice[0])
+total_score = sum(scores)
 
 st.markdown("---")
-st.header("📊 診断結果")
-st.metric("あなたの合計スコア", f"{score} / 20")
-st.write(interpret_score(score))
+st.markdown("## 📝 診断結果")
+st.write(f"**あなたの合計スコア： {total_score} / 20**")
+
+# 該当レンジを判定
+matched = None
+for r in ranges:
+    if r["min"] <= total_score <= r["max"]:
+        matched = r
+        break
+
+if matched:
+    st.markdown(f"### 🟢 {matched['title']}")
+    st.write(matched['description'])
+    st.markdown("**次の一歩（例）**")
+    for step in matched['next_steps']:
+        st.write(f"- {step}")
+
+    # 4段階モデル図（簡易バージョン）
+    st.markdown("---")
+    st.markdown("### あなたの位置（4段階モデル）")
+    options = ["属人依存", "個別最適", "土台構築", "全社展開"]
+    display = ""
+    for opt in options:
+        if opt == matched['label']:
+            display += f"🟩 **{opt}** ← ★あなたはここ\n\n"
+        else:
+            display += f"⬜ {opt}\n\n"
+    st.markdown(display)

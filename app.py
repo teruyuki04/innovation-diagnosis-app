@@ -62,5 +62,6 @@ st.markdown(f"### あなたの合計スコア：{total_score} / {max_score}")
 # メッセージ表示（スコアに応じた診断コメント）
 for r in score_ranges:
     if r["min"] <= total_score <= r["max"]:
-        st.markdown(f"#### 🧭 あなたの診断タイプ：{r['message']}")
+        st.markdown(f"#### 🧭 あなたの診断タイプ：{r['title']}")
+        st.write(r["message"])
         break

@@ -58,6 +58,9 @@ for q in questions:
 # 診断結果の表示
 st.markdown("## 📄 診断結果")
 st.markdown(f"### あなたの合計スコア：{total_score} / {max_score}")
+# デバッグ：score_ranges の中身を確認
+st.subheader("🔍 デバッグ用：score_ranges の中身")
+st.json(score_ranges)
 
 # メッセージ表示（スコアに応じた診断コメント）
 for r in score_ranges:

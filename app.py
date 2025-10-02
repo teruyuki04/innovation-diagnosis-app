@@ -5,34 +5,37 @@ import json
 with open("score_ranges.json", "r", encoding="utf-8") as f:
     score_ranges = json.load(f)
 
-st.title("✅【構想プロセスのボトルネック診断チェックリスト】")
+# アプリタイトル
+st.title("🧭【構想プロセスのボトルネック診断チェックリスト】")
 
 st.write("""
-このチェックリストは、次の柱となる事業がなぜ生まれないのか──  
+このチェックリストは、次の柱となる事業がなぜ生まれないのか――  
 その原因を「構造的なボトルネック」として可視化するためのものです。
 """)
 
-st.markdown("### 🔢 評価基準（共通）")
+# 評価基準の説明
+st.markdown("### 📘 評価基準（共通）")
 st.write("""
-- 1点：まったくできていない／仕組みがない  
-- 2点：一部にはあるが、属人化・偶発的  
-- 3点：仕組みはあるが、全社的には運用されていない  
-- 4点：実践と改善のサイクルが定着している  
-- 5点：全社に再現可能な仕組みとして標準化されている
+1点：まったくできていない／仕組みがない  
+2点：一部にはあるが、属人的、仮説的  
+3点：仕組みはあるが、全体的には浸透されていない  
+4点：共通言語化され組織として蓄積している  
+5点：全社に理解が浸透し構造的な仕組みとして標準化されている
 """)
 
+# 質問リスト（例）
 questions = [
     {
         "title": "【1】課題設定の深さ",
-        "question": "「社会構造 × 未充足の欲求」まで掘り下げた、勝てる課題設定ができているか？"
+        "question": "代表課題・未来起点の欲求」まで掘り下げた、勝てる課題設定ができているか？"
     },
     {
         "title": "【2】勝ち筋の明確さ",
-        "question": "「小市場の独占 → 自動拡張」までの戦略設計が組織内で共有されているか？"
+        "question": "構想に「自社独自の勝ち筋」があるか？事業仮説の骨格が構造として描かれているか？"
     },
     {
         "title": "【3】プロセスの再現性",
-        "question": "「構想 → 仮説 → 実証」のプロセスが仕組みとして確立されているか？"
+        "question": "再現可能なプロセスになっているか？アブダクションや仮説検証の流れが明確か？"
     },
     {
         "title": "【4】制度的な後押し",
@@ -40,43 +43,24 @@ questions = [
     }
 ]
 
-scores = []
+# 回答の受付
+st.markdown("### ✅ 各質問に回答してください")
+total_score = 0
+max_score = len(questions) * 5
+
 for q in questions:
-    st.markdown(f"### {q['title']}")
+    st.markdown(f"**{q['title']}**")
     st.write(q["question"])
-    score = st.radio("選択肢を選んでください", [1, 2, 3, 4, 5], key=q['title'])
-    scores.append(score)
+    score = st.radio("選択肢を選んでください", [1, 2, 3, 4, 5], key=q["title"])
+    total_score += score
+    st.markdown("---")
 
-total_score = sum(scores)
+# 診断結果の表示
+st.markdown("## 📄 診断結果")
+st.markdown(f"### あなたの合計スコア：{total_score} / {max_score}")
 
-st.markdown("---")
-st.markdown("## 📝 診断結果")
-st.write(f"**あなたの合計スコア： {total_score} / 20**")
-
-# 該当レンジを判定
-matched = None
-# score_ranges に基づく診断メッセージの表示
+# メッセージ表示（スコアに応じた診断コメント）
 for r in score_ranges:
     if r["min"] <= total_score <= r["max"]:
         st.markdown(f"#### 🧭 あなたの診断タイプ：{r['message']}")
         break
-
-
-if matched:
-    st.markdown(f"### 🟢 {matched['title']}")
-    st.write(matched['description'])
-    st.markdown("**次の一歩（例）**")
-    for step in matched['next_steps']:
-        st.write(f"- {step}")
-
-    # 4段階モデル図（簡易バージョン）
-    st.markdown("---")
-    st.markdown("### あなたの位置（4段階モデル）")
-    options = ["属人依存", "個別最適", "土台構築", "全社展開"]
-    display = ""
-    for opt in options:
-        if opt == matched['label']:
-            display += f"🟩 **{opt}** ← ★あなたはここ\n\n"
-        else:
-            display += f"⬜ {opt}\n\n"
-    st.markdown(display)

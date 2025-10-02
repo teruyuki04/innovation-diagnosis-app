@@ -1,64 +1,60 @@
-# -*- coding: utf-8 -*-
 import streamlit as st
 import json
+import pandas as pd
+from score_logic import calculate_scores
 
-# ページ設定
-st.set_page_config(page_title="イノベーション診断アプリ", layout="centered")
+st.set_page_config(page_title="イノベーション診断アプリ", layout="wide")
 st.title("🧭 イノベーション診断アプリ")
 
-# ファイル読み込み
+# 質問の読み込み
 with open("questions.json", "r", encoding="utf-8") as f:
     questions = json.load(f)
 
-with open("score_ranges.json", "r", encoding="utf-8") as f:
-    score_descriptions = json.load(f)
-
+# コメント範囲の読み込み
 with open("score_comment_ranges.json", "r", encoding="utf-8") as f:
     comment_ranges = json.load(f)
 
-# 回答保存用
-scores = {}
+# チェックリストの読み込み
+with open("diagnosis_checklist.txt", "r", encoding="utf-8") as f:
+    checklist_items = [line.strip() for line in f.readlines() if line.strip()]
 
-st.markdown("以下の4項目について、1〜5点で現在の状態を評価してください。")
+st.header("✅ チェックリスト（初期確認）")
+checklist_responses = []
+for item in checklist_items:
+    checked = st.checkbox(item)
+    checklist_responses.append((item, checked))
 
-# 質問ごとに表示
-for item in questions:
-    category = item["category"]
-    question = item["question"]
-    st.markdown(f"### 【{category}】")
-    st.write(question)
+st.divider()
+st.header("📝 診断質問")
+responses = {}
+for category in questions:
+    st.subheader(category["category"])
+    for q in category["questions"]:
+        key = f'{category["category"]}_{q["id"]}'
+        responses[key] = st.slider(q["text"], 1, 5, 3)
 
-    # 選択肢の説明を取得
-    options = score_descriptions.get(category, {})
+if st.button("診断実行"):
+    st.subheader("📊 診断結果")
+    category_scores, total_score = calculate_scores(questions, responses)
 
-    # 選択肢表示（1〜5）
-    score = st.radio(
-        "スコアを選んでください",
-        options=[1, 2, 3, 4, 5],
-        key=category,
-        format_func=lambda x: f"{x}：{options.get(str(x), '')}"
-    )
+    st.write(f"### 🧮 総合スコア: {total_score} 点（100点満点）")
 
-    scores[category] = score
-    st.markdown("---")
-
-# 診断結果表示
-if st.button("診断結果を見る"):
-    st.header("🧾 診断結果")
-
-    # 合計スコア計算
-    total_score = sum(scores.values())
-    st.markdown(f"### あなたの合計スコア：**{total_score} / 20**")
-
-    # 合計スコアによるタイプ診断
-    for entry in comment_ranges:
+    # コメント表示
+    for entry in comment_ranges["total_score"]:
         if entry["min"] <= total_score <= entry["max"]:
-            st.markdown(f"#### 🎯 あなたの診断タイプ：**{entry['title']}**")
-            st.markdown(f"{entry['message']}")
+            st.info(f"💬 総評: {entry['comment']}")
             break
 
-    # 各カテゴリのスコアと説明も出す
-    st.markdown("### 各カテゴリのスコア内訳")
-    for cat, score in scores.items():
-        desc = score_descriptions.get(cat, {}).get(str(score), "")
-        st.write(f"- **{cat}：{score}点** … {desc}")
+    # カテゴリ別表示
+    st.write("### 🗂 カテゴリ別スコア")
+    for category, score in category_scores.items():
+        st.write(f"#### {category}: {score} 点")
+        for entry in comment_ranges["categories"].get(category, []):
+            if entry["min"] <= score <= entry["max"]:
+                st.caption(f"💡 {entry['comment']}")
+                break
+
+    st.divider()
+    st.subheader("📌 実行前チェック再掲")
+    for item, checked in checklist_responses:
+        st.write(f"{'✅' if checked else '⬜️'} {item}")

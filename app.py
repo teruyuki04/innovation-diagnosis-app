@@ -55,10 +55,12 @@ st.write(f"**あなたの合計スコア： {total_score} / 20**")
 
 # 該当レンジを判定
 matched = None
-for r in ranges:
+# score_ranges に基づく診断メッセージの表示
+for r in score_ranges:
     if r["min"] <= total_score <= r["max"]:
-        matched = r
+        st.markdown(f"#### 🧭 あなたの診断タイプ：{r['message']}")
         break
+
 
 if matched:
     st.markdown(f"### 🟢 {matched['title']}")

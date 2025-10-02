@@ -2,8 +2,8 @@ import streamlit as st
 import json
 
 # JSON読み込み
-with open("questions.json", "r", encoding="utf-8") as f:
-    ranges = json.load(f)
+with open("score_ranges.json", "r", encoding="utf-8") as f:
+    score_ranges = json.load(f)
 
 st.title("✅【構想プロセスのボトルネック診断チェックリスト】")
 

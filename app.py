@@ -1,49 +1,59 @@
 import streamlit as st
+from score_logic import calculate_score_and_comment
 import json
-from score_logic import calculate_scores
 
-# エラー回避のために、日本語を含まないタイトルに変更
-st.set_page_config(page_title="Shiftcraft Diagnosis", layout="centered")
+st.set_page_config(page_title="構想ボトルネック診断", layout="centered")
 
-st.title("🧠 Shiftcraft｜構想ボトルネック診断")
+st.title("🧠 構想ボトルネック診断")
+st.markdown("プロジェクトの詰まりの構造を可視化し、打ち手を即座に判断するための自己診断ツールです。")
 
 # 質問読み込み
 with open("questions.json", "r", encoding="utf-8") as f:
     questions = json.load(f)
 
-# スコアリングUI
-st.header("📋 自己診断チェック")
 scores = {}
-for question in questions:
-    score = st.radio(
-        f"{question['category']}｜{question['question']}",
-        question["choices"],
-        key=question["id"],
-        index=2
-    )
-    scores[question["id"]] = question["choices"].index(score) + 1
+st.header("📝 診断スタート")
+
+for category in questions:
+    st.subheader(f"【{category['category']}】")
+    for q in category["questions"]:
+        score = st.radio(f"・{q['question']}", [1, 2, 3, 4, 5], horizontal=True, key=q["question"])
+        scores[q["question"]] = score
+
+# 診断ロジック呼び出し
+total_score, comment, color = calculate_score_and_comment(scores)
 
 # 結果表示
-if st.button("✅ 診断する"):
-    total_score, comment = calculate_score_and_comment(scores)
+st.markdown("---")
+st.header("📊 診断結果")
 
-    st.markdown("---")
-    st.subheader("🧾 診断結果")
+st.markdown(f"### あなたの構想スコア： {total_score}点（100点満点）")
 
-    # スコアに応じた段階を表示
-    if total_score <= 8:
-        st.warning("🟧 フェーズ1：構想以前（ボトルネックが大きい状態）")
-    elif total_score <= 14:
-        st.info("🟨 フェーズ2：構想試行（挑戦の芽がある）")
-    elif total_score <= 18:
-        st.success("🟩 フェーズ3：構想進展（成功確率が高まる）")
-    else:
-        st.balloons()
-        st.success("🌟 フェーズ4：構想飛躍（スケール可能な構想）")
+color_blocks = {
+    "🟥": "#FF4B4B",
+    "🟧": "#FFA500",
+    "🟨": "#FFD700",
+    "🟩": "#2ECC71"
+}
+bg_color = color_blocks.get(color[:2], "#DDDDDD")
 
-    st.markdown("📊 図解による位置づけ（今後追加予定）")
+st.markdown(
+    f"""
+    <div style='background-color: {bg_color}; padding: 1rem; border-radius: 0.5rem;'>
+        <h3 style='margin: 0;'>{color} {comment['title']}</h3>
+        <p style='margin-top: 0.5rem;'>{comment['description']}</p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
-    st.markdown("---")
-    st.write(comment)
+st.markdown("")
+
+st.subheader("🧭 次の一手")
+st.markdown(f"**▶ {comment['action']}**")
+
+st.markdown("---")
+st.caption("© Shiftcraft / Proudfoot Japan")
+
 
 

@@ -22,44 +22,50 @@ with open("score_comment_ranges.json", "r", encoding="utf-8") as f:
 responses = {}
 
 # 質問UIの生成
-for category, items in questions.items():
+for category, item in questions.items():
     st.header(category)
-    for item in items:
-        responses[item] = st.slider(item, 1, 5, 3)
+    score = st.radio(
+        item["question"],
+        list(item["options"].values()),
+        index=2
+    )
+    # 選択された選択肢のスコア（1～5）を保存
+    selected_score = list(item["options"].values()).index(score) + 1
+    responses[category] = selected_score
 
-# スコア計算と結果表示
+# 診断ボタンが押されたら
 if st.button("スコアを診断する"):
     total_score, breakdown = calculate_scores(responses)
 
-    # スコア表示
     st.subheader("🧮 あなたの構想スコア：")
     st.metric("合計スコア", f"{total_score} / 20")
 
-    # スコアに応じたフェーズと色の割り当て
-    if total_score <= 8:
-        phase = "🟥 属人依存の危機"
-        color = "red"
-    elif total_score <= 12:
-        phase = "🟧 部分最適"
-        color = "orange"
-    elif total_score <= 16:
-        phase = "🟨 飛躍準備"
-        color = "gold"
+    # スコア範囲に応じてコメントを表示
+    matched_comment = None
+    for item in score_comments:
+        if item["min_score"] <= total_score <= item["max_score"]:
+            matched_comment = item["comment"]
+            break
+
+    # 色付きラベルの判定
+    if total_score <= 9:
+        phase_color = "#e63946"  # 赤
+    elif total_score <= 14:
+        phase_color = "#f4a261"  # オレンジ
+    elif total_score <= 17:
+        phase_color = "#e9c46a"  # 黄
     else:
-        phase = "🟩 拡張の好機"
-        color = "green"
+        phase_color = "#2a9d8f"  # 緑
 
-    # 色付き表示
-    st.markdown(f"<h3 style='color:{color}'>現在のフェーズ：{phase}</h3>", unsafe_allow_html=True)
+    # 表示ブロック
+    st.markdown(f"<h3 style='color:{phase_color}'>🧭 フェーズ診断：{matched_comment.splitlines()[0]}</h3>", unsafe_allow_html=True)
+    st.markdown(f"<div style='padding:1em; background-color:#f9f9f9; border-left: 5px solid {phase_color};'><pre style='white-space: pre-wrap;'>{matched_comment}</pre></div>", unsafe_allow_html=True)
 
-    # コメント表示
-    comment = score_comments.get(str(total_score), "該当するコメントが見つかりませんでした。")
-    st.markdown(f"### 💬 解釈と次の一手\n{comment}")
-
-    # スコア内訳表示（オプション）
-    with st.expander("スコア内訳を表示"):
+    # スコア内訳表示
+    with st.expander("🗂 スコア内訳を表示"):
         for category, score in breakdown.items():
             st.write(f"{category}: {score}")
+
 
 
 

@@ -1,3 +1,12 @@
+import sys
+import os
+sys.path.append(os.path.dirname(__file__))
+
+import streamlit as st
+import json
+
+from score_logic import calculate_scores, get_phase_and_advice
+
 import streamlit as st
 import json
 import pandas as pd

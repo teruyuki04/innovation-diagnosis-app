@@ -1,6 +1,6 @@
 import streamlit as st
 import json
-from score_logic import calculate_score_and_comment
+from score_logic import calculate_scores
 
 # エラー回避のために、日本語を含まないタイトルに変更
 st.set_page_config(page_title="Shiftcraft Diagnosis", layout="centered")

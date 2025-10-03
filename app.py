@@ -1,61 +1,57 @@
 # force rebuild
+
 import streamlit as st
 import json
-import pandas as pd
 from score_logic import calculate_scores
 
-st.set_page_config(page_title="イノベーション診断アプリ", layout="wide")
-st.title("🧭 イノベーション診断アプリ")
-
-# 質問の読み込み
+# 設問読み込み
 with open("questions.json", "r", encoding="utf-8") as f:
     questions = json.load(f)
 
-# コメント範囲の読み込み
+# 評価コメント読み込み
 with open("score_comment_ranges.json", "r", encoding="utf-8") as f:
-    comment_ranges = json.load(f)
+    score_comments = json.load(f)
 
-# チェックリストの読み込み
-with open("diagnosis_checklist.txt", "r", encoding="utf-8") as f:
-    checklist_items = [line.strip() for line in f.readlines() if line.strip()]
+st.set_page_config(page_title="構想ボトルネック診断", layout="centered")
+st.title("🧭 構想ボトルネック診断")
+st.markdown("経営構想を阻むボトルネックを可視化し、次の一手を明確にする自己診断ツールです。")
 
-st.header("✅ チェックリスト（初期確認）")
-checklist_responses = []
-for item in checklist_items:
-    checked = st.checkbox(item)
-    checklist_responses.append((item, checked))
+# 入力スコア保持
+scores = {}
 
-st.divider()
-st.header("📝 診断質問")
-responses = {}
+# 設問表示
 for category in questions:
-    st.subheader(category["category"])
-    for q in category["questions"]:
-        key = f'{category["category"]}_{q["id"]}'
-        responses[key] = st.slider(q["text"], 1, 5, 3)
+    st.subheader(f"【{category['category']}】")
+    score = st.radio(
+        label=category["description"],
+        options=[(i+1, option) for i, option in enumerate(category["options"])],
+        format_func=lambda x: f"{x[0]}：{x[1]}",
+        key=category["category"]
+    )
+    scores[category["category"]] = score[0]
 
-if st.button("診断実行"):
-    st.subheader("📊 診断結果")
-    category_scores, total_score = calculate_scores(questions, responses)
+# 診断ボタン
+if st.button("診断する"):
+    total_score = calculate_scores(list(scores.values()))
+    st.subheader(f"🎯 総合スコア：{total_score} 点（最大20点）")
 
-    st.write(f"### 🧮 総合スコア: {total_score} 点（100点満点）")
+    # コメント判定
+    matched_comment = next(
+        (c for c in score_comments if c["min"] <= total_score <= c["max"]),
+        None
+    )
 
-    # コメント表示
-    for entry in comment_ranges["total_score"]:
-        if entry["min"] <= total_score <= entry["max"]:
-            st.info(f"💬 総評: {entry['comment']}")
-            break
+    if matched_comment:
+        st.markdown(f"### 🧭 現在のフェーズ：{matched_comment['phase']}")
+        st.markdown(f"**{matched_comment['title']}**")
+        st.info(matched_comment["comment"])
 
-    # カテゴリ別表示
-    st.write("### 🗂 カテゴリ別スコア")
-    for category, score in category_scores.items():
-        st.write(f"#### {category}: {score} 点")
-        for entry in comment_ranges["categories"].get(category, []):
-            if entry["min"] <= score <= entry["max"]:
-                st.caption(f"💡 {entry['comment']}")
-                break
-
-    st.divider()
-    st.subheader("📌 実行前チェック再掲")
-    for item, checked in checklist_responses:
-        st.write(f"{'✅' if checked else '⬜️'} {item}")
+        # SVG図表示（任意）
+        try:
+            with open("assets/phase_chart.svg", "r", encoding="utf-8") as f:
+                svg = f.read()
+            st.components.v1.html(svg, height=400)
+        except FileNotFoundError:
+            st.warning("※フェーズ図が未設定です。`assets/phase_chart.svg` を追加してください。")
+    else:
+        st.error("診断コメントが見つかりませんでした。")

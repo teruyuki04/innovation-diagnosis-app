@@ -1,46 +1,32 @@
 import streamlit as st
 import json
-import os
-import pandas as pd
-import importlib.util
-import sys
+from score_logic import calculate_scores, get_phase_and_advice
 
-# 動的に score_logic.py を読み込む（Streamlit CloudでのImportError対策）
-spec = importlib.util.spec_from_file_location("score_logic", "score_logic.py")
-score_logic = importlib.util.module_from_spec(spec)
-sys.modules["score_logic"] = score_logic
-spec.loader.exec_module(score_logic)
-
-# ファイル一覧表示（デバッグ用）
-st.write("現在のフォルダ内のファイル:", os.listdir())
-
-# ファイル読み込み
+# JSONファイル読み込み
 with open("questions.json", "r", encoding="utf-8") as f:
     questions = json.load(f)
 
 with open("score_comment_ranges.json", "r", encoding="utf-8") as f:
-    score_comments = json.load(f)
+    score_ranges = json.load(f)
 
-# アプリタイトル
+# アプリ本体
 st.set_page_config(page_title="構想ボトルネック診断", layout="centered")
 st.title("構想ボトルネック診断")
 
-# スコア入力
-st.header("① 各項目を自己診断してください（1〜5点）")
-scores = {}
-for category, items in questions.items():
-    st.subheader(f"【{category}】")
-    for item in items:
-        score = st.slider(f"{item}", min_value=1, max_value=5, key=f"{category}_{item}")
-        scores[item] = score
+st.markdown("以下の4項目について、現在の自社の状態を自己診断してください（1〜5点）")
 
-# スコア計算
+user_scores = {}
+for section in questions:
+    st.subheader(section["title"])
+    for q in section["questions"]:
+        user_scores[q["id"]] = st.slider(q["text"], 1, 5, 3)
+
+# 診断実行
 if st.button("診断する"):
-    total_score, phase, advice = score_logic.calculate_scores(scores)
-    comment = score_logic.get_phase_and_advice(phase, score_comments)
+    total_score, phase, advice = calculate_scores(user_scores, score_ranges)
 
     st.markdown("---")
-    st.subheader("② 診断結果")
-    st.markdown(f"**スコア合計**: {total_score}点")
-    st.markdown(f"**現在のフェーズ**: {phase}")
-    st.markdown(f"**解釈と次の一手**: {comment}")
+    st.header("診断結果")
+    st.write(f"🧮 合計スコア: **{total_score} / 20**")
+    st.write(f"📊 現在のフェーズ: **{phase}**")
+    st.markdown(f"💡 アドバイス:\n\n{advice}")

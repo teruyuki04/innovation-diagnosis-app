@@ -1,14 +1,14 @@
 import streamlit as st
 import json
-from score_logic import calculate_scores  # スコア計算ロジックを読み込む
+from score_logic import calculate_scores
 from PIL import Image
 
 # ページ設定
 st.set_page_config(page_title="Shiftcraft 構想ボトルネック診断", layout="wide")
 
 # タイトル
-st.title("🧠 Shiftcraft | 構想ボトルネック診断")
-st.markdown("### あなたの構想は今どの段階にある？スコアで可視化し、次の一手を示します")
+st.title("🌟 Shiftcraft｜構想ボトルネック診断")
+st.markdown("### あなたの構想が今どの段階にある？スコアで可視化し、次の一手を示します")
 
 # 質問ファイル読み込み
 with open("questions.json", "r", encoding="utf-8") as f:
@@ -25,34 +25,41 @@ responses = {}
 for category, items in questions.items():
     st.header(category)
     for item in items:
-        responses[item["question"]] = st.radio(
-            item["question"],
-            [f"{i+1}: {desc}" for i, desc in enumerate(item["choices"])],
-            index=2,  # デフォルトは3番目
-            key=item["question"]
-        )
+        responses[item] = st.slider(item, 1, 5, 3)
 
-# 診断ボタン押下後
-if st.button("診断する"):
-    total_score, comment = calculate_scores(responses, score_comments)
+# スコア計算と結果表示
+if st.button("スコアを診断する"):
+    total_score, breakdown = calculate_scores(responses)
 
-    st.write("### 診断結果")
-    st.write(f"総合スコア: {total_score}点")
+    # スコア表示
+    st.subheader("🧮 あなたの構想スコア：")
+    st.metric("合計スコア", f"{total_score} / 20")
 
-    # スコアに応じて色付きメッセージを表示
-    if total_score <= 9:
-        st.warning("🟥 フェーズ1：構造不在・属人依存の危機ゾーン")
-    elif total_score <= 14:
-        st.info("🟧 フェーズ2：取り組みのムラ・部分最適ゾーン")
-    elif total_score <= 17:
-        st.success("🟨 フェーズ3：構想の土台あり・飛躍準備ゾーン")
+    # スコアに応じたフェーズと色の割り当て
+    if total_score <= 8:
+        phase = "🟥 属人依存の危機"
+        color = "red"
+    elif total_score <= 12:
+        phase = "🟧 部分最適"
+        color = "orange"
+    elif total_score <= 16:
+        phase = "🟨 飛躍準備"
+        color = "gold"
     else:
-        st.balloons()
-        st.success("🟩 フェーズ4：構造化・制度化フェーズ（拡張の好機）")
+        phase = "🟩 拡張の好機"
+        color = "green"
 
-    # コメント（詳細アドバイス）
-    st.markdown("### 📝 コメント")
-    st.write(comment)
+    # 色付き表示
+    st.markdown(f"<h3 style='color:{color}'>現在のフェーズ：{phase}</h3>", unsafe_allow_html=True)
+
+    # コメント表示
+    comment = score_comments.get(str(total_score), "該当するコメントが見つかりませんでした。")
+    st.markdown(f"### 💬 解釈と次の一手\n{comment}")
+
+    # スコア内訳表示（オプション）
+    with st.expander("スコア内訳を表示"):
+        for category, score in breakdown.items():
+            st.write(f"{category}: {score}")
 
 
 

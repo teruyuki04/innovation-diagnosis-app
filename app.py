@@ -1,46 +1,46 @@
-# force rebuild 20251003
-# force rebuild
-
 import streamlit as st
 import json
-import os
-from score_logic import calculate_scores
+import pandas as pd
+from score_logic import calculate_scores, get_phase_and_advice
 
-# 設問読み込み
-base_dir = os.path.dirname(__file__)
+# ファイル読み込み関数
+@st.cache_data
+def load_json(filename):
+    with open(filename, 'r', encoding='utf-8') as f:
+        return json.load(f)
 
-questions_path = os.path.join(base_dir, "questions.json")
-with open(questions_path, "r", encoding="utf-8") as f:
-    questions = json.load(f)
+# データ読み込み
+questions = load_json("questions.json")
+score_comments = load_json("score_comment_ranges.json")
 
-# 評価コメント読み込み
-score_comments_path = os.path.join(base_dir, "score_comment_ranges.json")
-with open(score_comments_path, "r", encoding="utf-8") as f:
-    score_comments = json.load(f)
+# タイトル
+st.title("構想ボトルネック診断")
 
-st.set_page_config(page_title="構想ボトルネック診断", layout="centered")
-st.title("🧠 構想ボトルネック診断")
-st.markdown("経営構想を阻むボトルネックを可視化し、次の一手を明確にする自己診断ツールです。")
-
-# 入力スコア保存
+# 質問表示と回答取得
 scores = {}
-
-# 設問表示
 for category in questions:
-    st.subheader(f"【{category['category']}】")
-    score = st.radio(
-        label=category["description"],
-        options=[(i+1, option) for i, option in enumerate(category["options"])],
-        format_func=lambda x: f"{x[0]}：{x[1]}",
-        key=category["category"]
+    st.subheader(f"【{category}】")
+    selected = st.radio(
+        questions[category]["question"],
+        options=list(questions[category]["options"].keys()),
+        format_func=lambda x: f"{x}：{questions[category]['options'][x]}",
+        key=category
     )
-    scores[category["category"]] = score[0]
+    scores[category] = int(selected)
 
-# スコア計算ボタン
+# 診断ボタン
 if st.button("診断する"):
     total_score, comment = calculate_scores(scores, score_comments)
+    phase, advice = get_phase_and_advice(total_score)
 
-    st.markdown("---")
-    st.subheader("📝 診断結果")
-    st.metric("合計スコア", f"{total_score} 点")
+    st.markdown("### 🔢 総合スコア")
+    st.write(f"{total_score} 点")
+
+    st.markdown("### 🧭 現在のフェーズ")
+    st.write(phase)
+
+    st.markdown("### 💬 フェーズ解説")
+    st.write(advice)
+
+    st.markdown("### 📌 コメント")
     st.write(comment)

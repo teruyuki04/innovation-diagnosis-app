@@ -1,3 +1,4 @@
+# スコアに基づいて診断コメントを返す
 def get_diagnosis(score: int) -> dict:
     if score <= 10:
         return {
@@ -40,10 +41,8 @@ def get_diagnosis(score: int) -> dict:
             )
         }
 
-# 🔧 必要な calculate_scores を追加
+# 回答（辞書形式）を集計し、合計スコアと内訳を返す関数
 def calculate_scores(responses: dict) -> tuple:
     total = sum(responses.values())
     return total, responses
 
-            )
-        }

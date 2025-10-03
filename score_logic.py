@@ -39,3 +39,11 @@ def get_diagnosis(score: int) -> dict:
                 "構想の進化に向けて、アセット化・人材化・学習化の三位一体を整えていきましょう。"
             )
         }
+
+# 🔧 必要な calculate_scores を追加
+def calculate_scores(responses: dict) -> tuple:
+    total = sum(responses.values())
+    return total, responses
+
+            )
+        }
